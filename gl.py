@@ -42,7 +42,7 @@ class Render(object):
         # alto de la imagen
         self.alto = alto
         # color predeterminado del punto en la pantalla
-        self.punto_color = rosado
+        self.punto_color = negro
         # color de fondo de la imagen
         self.glClear()
 
@@ -56,7 +56,7 @@ class Render(object):
     def glClear(self):
         # color de fondo
         #color_fondo = color_f
-        self.pixels = [[negro for x in range(self.ancho)] for y in range(self.alto)]
+        self.pixels = [[rosado for x in range(self.ancho)] for y in range(self.alto)]
 
     # crear un punto en cualquier lugar de la pantalla 
     def glVertex(self, x, y):
@@ -79,9 +79,9 @@ class Render(object):
         dx = abs(x1 - x0)
         dy = abs(y1 - y0)
 
-        steep = dy > dx
+        inclinado = dy > dx
 
-        if steep:
+        if inclinado:
             x0, y0 = y0, x0
             x1, y1 = y1, x1
 
@@ -92,44 +92,38 @@ class Render(object):
         dx = abs(x1 - x0)
         dy = abs(y1 - y0)
 
-        offset = 0
+        desplazamiento = 0
         limit = 0.5
         
+        # si es division por cero el programa no ejecuta nada
         try:
             m = dy/dx
-        except ZeroDivisionError:
-            pass
-        else:
             y = y0
 
             for x in range(x0, x1 + 1):
-                if steep:
+                if inclinado:
                     self.glVertex(y, x)
                 else:
                     self.glVertex(x, y)
 
-                offset += m
-                if offset >= limit:
+                desplazamiento += m
+                if desplazamiento >= limit:
                     y += 1 if y0 < y1 else -1
                     limit += 1
+        except ZeroDivisionError:
+            pass
 
-    def loadModel(self, filename, translate, scale):
+    def Model(self, filename, translate, scale):
         model = Obj(filename)
-
         for face in model.faces:
-
             vertCount = len(face)
-
             for vert in range(vertCount):
-                
                 v0 = model.vertices[ face[vert][0] - 1 ]
                 v1 = model.vertices[ face[(vert + 1) % vertCount][0] - 1]
-
-                x0 = round(v0[0] * scale[0]  + translate[0])
-                y0 = round(v0[1] * scale[1]  + translate[1])
-                x1 = round(v1[0] * scale[0]  + translate[0])
-                y1 = round(v1[1] * scale[1]  + translate[1])
-
+                x0 = int(v0[0] * scale[0]  + translate[0])
+                y0 = int(v0[1] * scale[1]  + translate[1])
+                x1 = int(v1[0] * scale[0]  + translate[0])
+                y1 = int(v1[1] * scale[1]  + translate[1])
                 self.glLine(x0, y0, x1, y1)
 
     # escribe el archivo
