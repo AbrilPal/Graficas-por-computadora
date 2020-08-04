@@ -1,6 +1,6 @@
 # Andrea Abril Palencia Gutierrez, 18198
-# SR3: modelo Obj --- Graficas por computadora, seccion 20
-# 20/07/2020 - 27/07/2020
+# SR4: modelo Obj --- Graficas por computadora, seccion 20
+# 27/07/2020 - 04/08/2020
 
 # libreria
 import struct
@@ -62,11 +62,11 @@ class Render(object):
     def glVertex(self, x, y):
        # xw = int((x + 1) * (self.viewport_ancho/2) + self.viewport_x)
        # yw = int((y + 1) * (self.viewport_alto/2) + self.viewport_y)
-        self.pixels[x][y] = self.punto_color
+        self.pixels[y][x] = self.punto_color
 
     # permite cambiar el color del punto
-    # def glColor(self, color_p):
-       # self.punto_color = color_p
+    def glColor(self, color_p):
+        self.punto_color = color_p
 
     # hacer lineas
     def  glLine( self , x0 , y0 , x1 , y1 ):
@@ -125,6 +125,47 @@ class Render(object):
                 x1 = int(v1[0] * scale[0]  + translate[0])
                 y1 = int(v1[1] * scale[1]  + translate[1])
                 self.glLine(x0, y0, x1, y1)
+
+    # dibujar los poligonos
+    def Poligonos(self, vertices):
+        self.vertices = vertices
+        self.size = len(self.vertices)
+        for vertice in range(self.size):
+            x0 = self.vertices[vertice][0]
+            y0 = self.vertices[vertice][1]
+            # colocar las x de los poligonos
+            if vertice + 1 < self.size:
+                x1 = self.vertices[vertice + 1][0]
+            else:
+                self.vertices[0][0]
+            # colocar las y de los poligonos
+            if vertice + 1 < self.size:
+                y1 = self.vertices[vertice + 1][1] 
+            else:
+                self.vertices[0][1]
+            # hacer los poligonos, conectando los vertices
+            self.glLine(x0, y0, x1, y1)
+            # alto y ancho del framebuffer
+            for x in range(self.ancho):
+                for y in range(self.alto):
+                    # regla de par-impar
+                    # si retorna que es true pinta el punto
+                    if self.Regla(x, y) == True:
+                        self.glvertice(x, y)
+
+    # regla impar-par
+    def Regla(self, x, y):
+        num = self.size
+        i = 0
+        j = num - 1
+        c = False
+        for i in range(num):
+            if ((self.vertices[i][1] > y) != (self.vertices[j][1] > y)) and \
+                    (x < self.vertices[i][0] + (self.vertices[j][0] - self.vertices[i][0]) * (y - self.vertices[i][1]) /
+                                    (self.vertices[j][1] - self.vertices[i][1])):
+                c = not c
+            j = i
+        return c
 
     # escribe el archivo
     def glFinish(self, name):
