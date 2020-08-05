@@ -1,6 +1,6 @@
 # Andrea Abril Palencia Gutierrez, 18198
-# SR3: modelo Obj --- Graficas por computadora, seccion 20
-# 20/07/2020 - 27/07/2020
+# SR4: Flat Shading --- Graficas por computadora, seccion 20
+# 27/07/2020 - 04/08/2020
 
 from gl import Render
 from obj import Obj 
