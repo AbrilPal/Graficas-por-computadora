@@ -1,23 +1,11 @@
 # Andrea Abril Palencia Gutierrez, 18198
-# SR4: Flat Shading --- Graficas por computadora, seccion 20
-# 27/07/2020 - 04/08/2020
+# SR5: Textures --- Graficas por computadora, seccion 20
+# 04/08/2020 - 10/08/2020
 
 # libreria
 import struct
 from obj import Obj
-from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords
-from collections import namedtuple
-
-V2 = namedtuple('Point2', ['x', 'y'])
-V3 = namedtuple('Point3', ['x', 'y', 'z'])
-V4 = namedtuple('Point4', ['x', 'y', 'z','w'])
-
-def cruz_lis(v0, v1):
-    resultado=[]
-    resultado.append(v0[1]*v1[2]-v1[1]*v0[2])
-    resultado.append(-(v0[0]*v1[2]-v1[0]*v0[2]))
-    resultado.append(v0[0]*v1[1]-v1[0]*v0[1])
-    return resultado
+from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords, cruz_lis
 
 # para especificar cuanto tamaño quiero guardar en bytes de cada uno
 def char(c):
@@ -181,30 +169,28 @@ class Render(object):
             j = i
         return c
 
+    # hace el zbuffer de la imagen
     def glZBuffer(self, filename):
-        archivo = open(filename, 'wb')
+        imagen = open(filename, 'wb')
 
-        # File header compuesto por 14 bytes
-        archivo.write(bytes('B'.encode('ascii')))
-        archivo.write(bytes('M'.encode('ascii')))
-        archivo.write(dword(14 + 40 + self.ancho * self.alto * 3))
-        archivo.write(dword(0))
-        archivo.write(dword(14 + 40))
+        imagen.write(bytes('B'.encode('ascii')))
+        imagen.write(bytes('M'.encode('ascii')))
+        imagen.write(dword(14 + 40 + self.ancho * self.alto * 3))
+        imagen.write(dword(0))
+        imagen.write(dword(14 + 40))
 
-        # Image Header compuesto por 40 bytes
-        archivo.write(dword(40))
-        archivo.write(dword(self.ancho))
-        archivo.write(dword(self.alto))
-        archivo.write(word(1))
-        archivo.write(word(24))
-        archivo.write(dword(0))
-        archivo.write(dword(self.ancho * self.alto * 3))
-        archivo.write(dword(0))
-        archivo.write(dword(0))
-        archivo.write(dword(0))
-        archivo.write(dword(0))
+        imagen.write(dword(40))
+        imagen.write(dword(self.ancho))
+        imagen.write(dword(self.alto))
+        imagen.write(word(1))
+        imagen.write(word(24))
+        imagen.write(dword(0))
+        imagen.write(dword(self.ancho * self.alto * 3))
+        imagen.write(dword(0))
+        imagen.write(dword(0))
+        imagen.write(dword(0))
+        imagen.write(dword(0))
 
-        # Calculo del minimo y maximo
         minZ = float('inf')
         maxZ = -float('inf')
         for x in range(self.alto):
@@ -222,10 +208,11 @@ class Render(object):
                 if depth == -float('inf'):
                     depth = minZ
                 depth = (depth - minZ) / (maxZ - minZ)
-                archivo.write(color(depth,depth,depth))
+                imagen.write(color(depth,depth,depth))
 
-        archivo.close()
+        imagen.close()
 
+    # carga el modelo obj 
     def loadModel(self, filename, translate, scale):
         modelo = Obj(filename)
 
@@ -250,7 +237,6 @@ class Render(object):
             y2 = int(v2[1] * scale[1]  + translate[1])
             z2 = int(v2[2] * scale[2]  + translate[2])
 
-            # Operaciones para el calculo de la normal
             sub1 = resta_lis(x1, x0, y1, y0, z1, z0)
             sub2 = resta_lis(x2, x0, y2, y0, z2, z0)
             cross1 = cruz_lis(sub1, sub2)
@@ -263,7 +249,6 @@ class Render(object):
             if intensity >= 0:
                 self.triangle_bc(x0,x1,x2, y0, y1, y2, z0, z1, z2, color(convertir(intensity), convertir(intensity), convertir(intensity)))
             
-            # Si los vertices son mayores a 4 se asigna un 3 valor en las dimensiones
             if vertCount > 3: 
                 v3 = modelo.vertices[face[3][0] - 1]
                 x3 = int(v3[0] * scale[0]  + translate[0])
@@ -293,7 +278,7 @@ class Render(object):
                         self.glVertex(x, y)
                         self.zbuffer[y][x] = z
 
-    # escribe el archivo
+    # escribe el imagen
     def glFinish(self, name):
         imagen = open(name, 'wb')
         imagen.write(bytes('B'.encode('ascii')))
