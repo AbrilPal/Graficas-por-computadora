@@ -42,3 +42,10 @@ def baryCoords(Ax, Bx, Cx, Ay, By, Cy, Px, Py):
         return -1, -1, -1
 
     return u, v, w
+
+def cruz_lis(v0, v1):
+    resultado=[]
+    resultado.append(v0[1]*v1[2]-v1[1]*v0[2])
+    resultado.append(-(v0[0]*v1[2]-v1[0]*v0[2]))
+    resultado.append(v0[0]*v1[1]-v1[0]*v0[1])
+    return resultado
