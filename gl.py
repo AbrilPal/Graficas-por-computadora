@@ -128,12 +128,12 @@ class Render(object):
             pass
 
     def Model(self, filename, translate, scale):
-        model = Obj(filename)
-        for face in model.faces:
+        modelo = Obj(filename)
+        for face in modelo.faces:
             vertCount = len(face)
             for vert in range(vertCount):
-                v0 = model.vertices[ face[vert][0] - 1 ]
-                v1 = model.vertices[ face[(vert + 1) % vertCount][0] - 1]
+                v0 = modelo.vertices[ face[vert][0] - 1 ]
+                v1 = modelo.vertices[ face[(vert + 1) % vertCount][0] - 1]
                 x0 = int(v0[0] * scale[0]  + translate[0])
                 y0 = int(v0[1] * scale[1]  + translate[1])
                 x1 = int(v1[0] * scale[0]  + translate[0])
@@ -227,18 +227,18 @@ class Render(object):
         archivo.close()
 
     def loadModel(self, filename, translate, scale):
-        model = Obj(filename)
+        modelo = Obj(filename)
 
         lightX = 0
         lightY = 0
         lightZ = 1
 
-        for face in model.faces:
+        for face in modelo.faces:
 
             vertCount = len(face)
-            v0 = model.vertices[ face[0][0] - 1 ]
-            v1 = model.vertices[ face[1][0] - 1 ]
-            v2 = model.vertices[ face[2][0] - 1 ]
+            v0 = modelo.vertices[ face[0][0] - 1 ]
+            v1 = modelo.vertices[ face[1][0] - 1 ]
+            v2 = modelo.vertices[ face[2][0] - 1 ]
 
             x0 = int(v0[0] * scale[0]  + translate[0])
             y0 = int(v0[1] * scale[1]  + translate[1])
@@ -265,7 +265,7 @@ class Render(object):
             
             # Si los vertices son mayores a 4 se asigna un 3 valor en las dimensiones
             if vertCount > 3: 
-                v3 = model.vertices[face[3][0] - 1]
+                v3 = modelo.vertices[face[3][0] - 1]
                 x3 = int(v3[0] * scale[0]  + translate[0])
                 y3 = int(v3[1] * scale[1]  + translate[1])
                 z3 = int(v3[2] * scale[2]  + translate[2])
