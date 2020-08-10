@@ -226,67 +226,55 @@ class Render(object):
 
         archivo.close()
 
-    def loadObjModel(self, filename, translate, scale, isWireframe = False):
+    def loadModel(self, filename, translate, scale):
         model = Obj(filename)
 
-        # Coordenadas del vector de luz, equivalente a V3(0,0,1)
-        lightX, lightY, lightZ = 0, 0, 1
+        lightX = 0
+        lightY = 0
+        lightZ = 1
 
         for face in model.faces:
 
             vertCount = len(face)
+            v0 = model.vertices[ face[0][0] - 1 ]
+            v1 = model.vertices[ face[1][0] - 1 ]
+            v2 = model.vertices[ face[2][0] - 1 ]
 
-            if isWireframe:
-                for vert in range(vertCount):
-                    v0 = model.vertices[face[vert][0] - 1]
-                    v1 = model.vertices[face[(vert + 1) % vertCount][0] - 1]
-                    x0 = round(v0[0] * scale[0]  + translate[0])
-                    y0 = round(v0[1] * scale[1]  + translate[1])
-                    x1 = round(v1[0] * scale[0]  + translate[0])
-                    y1 = round(v1[1] * scale[1]  + translate[1])
-                    
-                    self.glLineCoord(x0, y0, x1, y1)
+            x0 = int(v0[0] * scale[0]  + translate[0])
+            y0 = int(v0[1] * scale[1]  + translate[1])
+            z0 = int(v0[2] * scale[2]  + translate[2])
+            x1 = int(v1[0] * scale[0]  + translate[0])
+            y1 = int(v1[1] * scale[1]  + translate[1])
+            z1 = int(v1[2] * scale[2]  + translate[2])
+            x2 = int(v2[0] * scale[0]  + translate[0])
+            y2 = int(v2[1] * scale[1]  + translate[1])
+            z2 = int(v2[2] * scale[2]  + translate[2])
 
-            else:
-                v0 = model.vertices[ face[0][0] - 1 ]
-                v1 = model.vertices[ face[1][0] - 1 ]
-                v2 = model.vertices[ face[2][0] - 1 ]
+            # Operaciones para el calculo de la normal
+            sub1 = resta_lis(x1, x0, y1, y0, z1, z0)
+            sub2 = resta_lis(x2, x0, y2, y0, z2, z0)
+            cross1 = cruz_lis(sub1, sub2)
+            norm1 = normal_fro(cross1)
+            cross2 = cruz_lis(sub1, sub2)
 
-                x0 = int(v0[0] * scale[0]  + translate[0])
-                y0 = int(v0[1] * scale[1]  + translate[1])
-                z0 = int(v0[2] * scale[2]  + translate[2])
-                x1 = int(v1[0] * scale[0]  + translate[0])
-                y1 = int(v1[1] * scale[1]  + translate[1])
-                z1 = int(v1[2] * scale[2]  + translate[2])
-                x2 = int(v2[0] * scale[0]  + translate[0])
-                y2 = int(v2[1] * scale[1]  + translate[1])
-                z2 = int(v2[2] * scale[2]  + translate[2])
+            normal = division_lis_fro(cross2, norm1)
+            intensity = punto(normal, lightX, lightY, lightZ)
 
-                # Operaciones para el calculo de la normal
-                sub1 = resta_lis(x1, x0, y1, y0, z1, z0)
-                sub2 = resta_lis(x2, x0, y2, y0, z2, z0)
-                cross1 = cruz_lis(sub1, sub2)
-                norm1 = normal_fro(cross1)
-                cross2 = cruz_lis(sub1, sub2)
-
-                normal = division_lis_fro(cross2, norm1)
-                intensity = punto(normal, lightX, lightY, lightZ)
+            if intensity >= 0:
+                self.triangle_bc(x0,x1,x2, y0, y1, y2, z0, z1, z2, color(convertir(intensity), convertir(intensity), convertir(intensity)))
+            
+            # Si los vertices son mayores a 4 se asigna un 3 valor en las dimensiones
+            if vertCount > 3: 
+                v3 = model.vertices[face[3][0] - 1]
+                x3 = int(v3[0] * scale[0]  + translate[0])
+                y3 = int(v3[1] * scale[1]  + translate[1])
+                z3 = int(v3[2] * scale[2]  + translate[2])
 
                 if intensity >= 0:
-                    self.triangle_bc(x0,x1,x2, y0, y1, y2, z0, z1, z2, color(convertir(intensity), convertir(intensity), convertir(intensity)))
-                
-                # Si los vertices son mayores a 4 se asigna un 3 valor en las dimensiones
-                if vertCount > 3: 
-                    v3 = model.vertices[face[3][0] - 1]
-                    x3 = int(v3[0] * scale[0]  + translate[0])
-                    y3 = int(v3[1] * scale[1]  + translate[1])
-                    z3 = int(v3[2] * scale[2]  + translate[2])
-
-                    if intensity >= 0:
-                        self.triangle_bc(x0,x2,x3, y0, y2,y3, z0, z2,z3, color(convertir(intensity), convertir(intensity), convertir(intensity)))
+                    self.triangle_bc(x0,x2,x3, y0, y2,y3, z0, z2,z3, color(convertir(intensity), convertir(intensity), convertir(intensity)))
 
     #Barycentric Coordinates
-    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, color = None):
+    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, color):
         minX = min(Ax, Bx, Cx)
         minY = min(Ay, By, Cy)
         maxX = max(Ax, Bx, Cx)
