@@ -5,8 +5,8 @@
 from gl import Render
 from obj import Obj 
 
-modelo = Render(800,800)
-
-modelo.Model('./models/PrimroseP.obj', (400,200), (700,700))
+modelo = Render(2000,2000)
+modelo.loadObjModel('./models/PrimroseP.obj', (1000, 500, 0), (1600, 1600, 1600))
 modelo.glFinish('modelo_obj.bmp')
+modelo.glZBuffer('outputZbuffer.bmp')
 print("¡Listo! La imagen esta creada con el nombre de 'modelo_obj.bmp'.")

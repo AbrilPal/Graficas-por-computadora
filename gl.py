@@ -5,6 +5,19 @@
 # libreria
 import struct
 from obj import Obj
+from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords
+from collections import namedtuple
+
+V2 = namedtuple('Point2', ['x', 'y'])
+V3 = namedtuple('Point3', ['x', 'y', 'z'])
+V4 = namedtuple('Point4', ['x', 'y', 'z','w'])
+
+def cruz_lis(v0, v1):
+    resultado=[]
+    resultado.append(v0[1]*v1[2]-v1[1]*v0[2])
+    resultado.append(-(v0[0]*v1[2]-v1[0]*v0[2]))
+    resultado.append(v0[0]*v1[1]-v1[0]*v0[1])
+    return resultado
 
 # para especificar cuanto tamaño quiero guardar en bytes de cada uno
 def char(c):
@@ -26,7 +39,7 @@ def convertir(co):
     return int(color_r)
     
 def color(r, g, b):
-    return bytes([b, g, r])
+    return bytes([int(b), int(g), int(r)])
 
 # colores predeterminados
 rosado = color(250,229,251)
@@ -57,6 +70,7 @@ class Render(object):
         # color de fondo
         #color_fondo = color_f
         self.pixels = [[rosado for x in range(self.ancho)] for y in range(self.alto)]
+        self.zbuffer = [ [ -float('inf') for x in range(self.ancho)] for y in range(self.alto) ]
 
     # crear un punto en cualquier lugar de la pantalla 
     def glVertex(self, x, y):
@@ -167,7 +181,129 @@ class Render(object):
             j = i
         return c
 
-    
+    def glZBuffer(self, filename):
+        archivo = open(filename, 'wb')
+
+        # File header compuesto por 14 bytes
+        archivo.write(bytes('B'.encode('ascii')))
+        archivo.write(bytes('M'.encode('ascii')))
+        archivo.write(dword(14 + 40 + self.ancho * self.alto * 3))
+        archivo.write(dword(0))
+        archivo.write(dword(14 + 40))
+
+        # Image Header compuesto por 40 bytes
+        archivo.write(dword(40))
+        archivo.write(dword(self.ancho))
+        archivo.write(dword(self.alto))
+        archivo.write(word(1))
+        archivo.write(word(24))
+        archivo.write(dword(0))
+        archivo.write(dword(self.ancho * self.alto * 3))
+        archivo.write(dword(0))
+        archivo.write(dword(0))
+        archivo.write(dword(0))
+        archivo.write(dword(0))
+
+        # Calculo del minimo y maximo
+        minZ = float('inf')
+        maxZ = -float('inf')
+        for x in range(self.alto):
+            for y in range(self.ancho):
+                if self.zbuffer[x][y] != -float('inf'):
+                    if self.zbuffer[x][y] < minZ:
+                        minZ = self.zbuffer[x][y]
+
+                    if self.zbuffer[x][y] > maxZ:
+                        maxZ = self.zbuffer[x][y]
+
+        for x in range(self.alto):
+            for y in range(self.ancho):
+                depth = self.zbuffer[x][y]
+                if depth == -float('inf'):
+                    depth = minZ
+                depth = (depth - minZ) / (maxZ - minZ)
+                archivo.write(color(depth,depth,depth))
+
+        archivo.close()
+
+    def loadObjModel(self, filename, translate, scale, isWireframe = False):
+        model = Obj(filename)
+
+        # Coordenadas del vector de luz, equivalente a V3(0,0,1)
+        lightX, lightY, lightZ = 0, 0, 1
+
+        for face in model.faces:
+
+            vertCount = len(face)
+
+            if isWireframe:
+                for vert in range(vertCount):
+                    v0 = model.vertices[face[vert][0] - 1]
+                    v1 = model.vertices[face[(vert + 1) % vertCount][0] - 1]
+                    x0 = round(v0[0] * scale[0]  + translate[0])
+                    y0 = round(v0[1] * scale[1]  + translate[1])
+                    x1 = round(v1[0] * scale[0]  + translate[0])
+                    y1 = round(v1[1] * scale[1]  + translate[1])
+                    
+                    self.glLineCoord(x0, y0, x1, y1)
+
+            else:
+                v0 = model.vertices[ face[0][0] - 1 ]
+                v1 = model.vertices[ face[1][0] - 1 ]
+                v2 = model.vertices[ face[2][0] - 1 ]
+
+                x0 = int(v0[0] * scale[0]  + translate[0])
+                y0 = int(v0[1] * scale[1]  + translate[1])
+                z0 = int(v0[2] * scale[2]  + translate[2])
+                x1 = int(v1[0] * scale[0]  + translate[0])
+                y1 = int(v1[1] * scale[1]  + translate[1])
+                z1 = int(v1[2] * scale[2]  + translate[2])
+                x2 = int(v2[0] * scale[0]  + translate[0])
+                y2 = int(v2[1] * scale[1]  + translate[1])
+                z2 = int(v2[2] * scale[2]  + translate[2])
+
+                # Operaciones para el calculo de la normal
+                sub1 = resta_lis(x1, x0, y1, y0, z1, z0)
+                sub2 = resta_lis(x2, x0, y2, y0, z2, z0)
+                cross1 = cruz_lis(sub1, sub2)
+                norm1 = normal_fro(cross1)
+                cross2 = cruz_lis(sub1, sub2)
+
+                normal = division_lis_fro(cross2, norm1)
+                intensity = punto(normal, lightX, lightY, lightZ)
+
+                if intensity >= 0:
+                    self.triangle_bc(x0,x1,x2, y0, y1, y2, z0, z1, z2, color(convertir(intensity), convertir(intensity), convertir(intensity)))
+                
+                # Si los vertices son mayores a 4 se asigna un 3 valor en las dimensiones
+                if vertCount > 3: 
+                    v3 = model.vertices[face[3][0] - 1]
+                    x3 = int(v3[0] * scale[0]  + translate[0])
+                    y3 = int(v3[1] * scale[1]  + translate[1])
+                    z3 = int(v3[2] * scale[2]  + translate[2])
+
+                    if intensity >= 0:
+                        self.triangle_bc(x0,x2,x3, y0, y2,y3, z0, z2,z3, color(convertir(intensity), convertir(intensity), convertir(intensity)))
+
+    #Barycentric Coordinates
+    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, color = None):
+        minX = min(Ax, Bx, Cx)
+        minY = min(Ay, By, Cy)
+        maxX = max(Ax, Bx, Cx)
+        maxY = max(Ay, By, Cy)
+
+        for x in range(minX, maxX + 1):
+            for y in range(minY, maxY + 1):
+                u, v, w = baryCoords(Ax, Bx, Cx, Ay, By, Cy, x,y)
+
+                if u >= 0 and v >= 0 and w >= 0:
+
+                    z = Az * u + Bz * v + Cz * w
+
+                    if z > self.zbuffer[y][x]:
+                        self.glColor(color)
+                        self.glVertex(x, y)
+                        self.zbuffer[y][x] = z
 
     # escribe el archivo
     def glFinish(self, name):
