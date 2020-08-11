@@ -293,15 +293,22 @@ class Render(object):
 
         for x in range(minx, maxx + 1):
             for y in range(miny, maxy + 1):
+                if x >= self.ancho or x < 0 or y >= self.alto or y < 0:
+                    continue
                 u, v, w = baryCoords(Ax, Bx, Cx, Ay, By, Cy, x,y)
 
                 if u >= 0 and v >= 0 and w >= 0:
                     z = Az * u + Bz * v + Cz * w
                     if z > self.zbuffer[y][x]:
-                        b, g , r = _color #Revisar color
+                        b, g , r = _color 
+                        b /= 255
+                        g /= 255
+                        r /= 255
 
+                        b *= intensity
+                        g *= intensity
+                        r *= intensity
                         if texture:
-                            # ta, tb, tc = texcoords
                             tx = tax * u + tbx * v + tcx * w
                             ty = tay * u + tby * v + tcy * w
 
@@ -310,6 +317,7 @@ class Render(object):
                             g *= texColor[1] / 255
                             r *= texColor[2] / 255
 
+                        self.glColor(color(convertir(r),convertir(g),convertir(b)))
                         self.glVertex(x, y)
                         self.zbuffer[y][x] = z
 
