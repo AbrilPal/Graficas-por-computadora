@@ -62,10 +62,11 @@ class Render(object):
         self.zbuffer = [ [ -float('inf') for x in range(self.ancho)] for y in range(self.alto) ]
 
     # crear un punto en cualquier lugar de la pantalla 
-    def glVertex(self, x, y):
-       # xw = int((x + 1) * (self.viewport_ancho/2) + self.viewport_x)
-       # yw = int((y + 1) * (self.viewport_alto/2) + self.viewport_y)
-        self.pixels[y][x] = self.punto_color
+    def glVertex(self, x, y, color = None):
+        try:
+            self.pixels[y][x] = color or self.punto_color
+        except:
+            pass
 
     # permite cambiar el color del punto
     def glColor(self, color_p):
@@ -261,15 +262,15 @@ class Render(object):
                     vt3 = modelo.texcoords[face[3][1] - 1]
                     vt3x = vt3[0]
                     vt3y = vt3[1]
-                else:
-                    vt0x = 0
-                    vt0y = 0
-                    vt1x = 0
-                    vt1y = 0
-                    vt2x = 0
-                    vt2y = 0
-                    vt3x = 0
-                    vt3y = 0
+            else:
+                vt0x = 0
+                vt0y = 0
+                vt1x = 0
+                vt1y = 0
+                vt2x = 0
+                vt2y = 0
+                vt3x = 0
+                vt3y = 0
 
             if vertCount > 3: 
                 v3 = modelo.vertices[face[3][0] - 1]
@@ -282,8 +283,6 @@ class Render(object):
                 if vertCount > 3:
                     self.triangle_bc(x0, x2, x3, y0, y2, y3, z0, z2, z3, vt0x, vt2x, vt3x, vt0y, vt2y, vt3y, texture = texture, intensity = intensity)           
             
-               
-                
     #Barycentric Coordinates
     def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, tax, tbx, tcx, tay, tby, tcy, _color = rosado, texture = None, intensity = 1):
         minx = min(Ax, Bx, Cx)
@@ -317,8 +316,7 @@ class Render(object):
                             g *= texColor[1] / 255
                             r *= texColor[2] / 255
 
-                        self.glColor(color(convertir(r),convertir(g),convertir(b)))
-                        self.glVertex(x, y)
+                        self.glVertex(x, y, texColor)
                         self.zbuffer[y][x] = z
 
     # escribe el imagen
