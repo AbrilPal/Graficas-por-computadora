@@ -5,6 +5,7 @@
 # libreria
 import struct
 from obj import Obj
+from textura import Texture
 from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords, cruz_lis
 
 # para especificar cuanto tamaño quiero guardar en bytes de cada uno
@@ -213,11 +214,11 @@ class Render(object):
         imagen.close()
 
     # carga el modelo obj 
-    def loadModel(self, filename, translate, scale, texture = None):
+    def loadModel(self, filename, translate, scale, texture):
         modelo = Obj(filename)
 
-        lightX = 0
-        lightY = 0
+        lightx = 0
+        lighty = 0
         lightZ = 1
 
         for face in modelo.faces:
@@ -244,22 +245,22 @@ class Render(object):
             cross2 = cruz_lis(sub1, sub2)
 
             normal = division_lis_fro(cross2, norm1)
-            intensity = punto(normal, lightX, lightY, lightZ)
+            intensity = punto(normal, lightx, lighty, lightZ)
 
             if texture:
-                    vt0 = model.texcoords[face[0][1] - 1]
-                    vt1 = model.texcoords[face[1][1] - 1]
-                    vt2 = model.texcoords[face[2][1] - 1]
-                    vt0x = vt0[0]
-                    vt0y = vt0[1]
-                    vt1x = vt1[0]
-                    vt1y = vt1[1]
-                    vt2x = vt2[0]
-                    vt2y = vt2[1]
-                    if vertCount > 3:
-                        vt3 = model.texcoords[face[3][1] - 1]
-                        vt3x = vt3[0]
-                        vt3y = vt3[1]
+                vt0 = modelo.texcoords[face[0][1] - 1]
+                vt1 = modelo.texcoords[face[1][1] - 1]
+                vt2 = modelo.texcoords[face[2][1] - 1]
+                vt0x = vt0[0]
+                vt0y = vt0[1]
+                vt1x = vt1[0]
+                vt1y = vt1[1]
+                vt2x = vt2[0]
+                vt2y = vt2[1]
+                if vertCount > 3:
+                    vt3 = modelo.texcoords[face[3][1] - 1]
+                    vt3x = vt3[0]
+                    vt3y = vt3[1]
                 else:
                     vt0x = 0
                     vt0y = 0
@@ -270,35 +271,45 @@ class Render(object):
                     vt3x = 0
                     vt3y = 0
 
-            if intensity >= 0:
-                self.triangle_bc(x0,x1,x2, y0, y1, y2, z0, z1, z2, color(convertir(intensity), convertir(intensity), convertir(intensity)))
-            
             if vertCount > 3: 
                 v3 = modelo.vertices[face[3][0] - 1]
                 x3 = int(v3[0] * scale[0]  + translate[0])
                 y3 = int(v3[1] * scale[1]  + translate[1])
                 z3 = int(v3[2] * scale[2]  + translate[2])
 
-                if intensity >= 0:
-                    self.triangle_bc(x0,x2,x3, y0, y2,y3, z0, z2,z3, color(convertir(intensity), convertir(intensity), convertir(intensity)))
-
+            if intensity >= 0:
+                self.triangle_bc(x0, x1, x2, y0, y1, y2, z0, z1, z2, vt0x, vt1x, vt2x, vt0y, vt1y, vt2y, texture = texture, intensity = intensity) 
+                if vertCount > 3:
+                    self.triangle_bc(x0, x2, x3, y0, y2, y3, z0, z2, z3, vt0x, vt2x, vt3x, vt0y, vt2y, vt3y, texture = texture, intensity = intensity)           
+            
+               
+                
     #Barycentric Coordinates
-    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, color):
-        minX = min(Ax, Bx, Cx)
-        minY = min(Ay, By, Cy)
-        maxX = max(Ax, Bx, Cx)
-        maxY = max(Ay, By, Cy)
+    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, tax, tbx, tcx, tay, tby, tcy, _color = rosado, texture = None, intensity = 1):
+        minx = min(Ax, Bx, Cx)
+        miny = min(Ay, By, Cy)
+        maxx = max(Ax, Bx, Cx)
+        maxy = max(Ay, By, Cy)
 
-        for x in range(minX, maxX + 1):
-            for y in range(minY, maxY + 1):
+        for x in range(minx, maxx + 1):
+            for y in range(miny, maxy + 1):
                 u, v, w = baryCoords(Ax, Bx, Cx, Ay, By, Cy, x,y)
 
                 if u >= 0 and v >= 0 and w >= 0:
-
                     z = Az * u + Bz * v + Cz * w
-
                     if z > self.zbuffer[y][x]:
-                        self.glColor(color)
+                        b, g , r = _color #Revisar color
+
+                        if texture:
+                            # ta, tb, tc = texcoords
+                            tx = tax * u + tbx * v + tcx * w
+                            ty = tay * u + tby * v + tcy * w
+
+                            texColor = texture.getColor(tx, ty)
+                            b *= texColor[0] / 255
+                            g *= texColor[1] / 255
+                            r *= texColor[2] / 255
+
                         self.glVertex(x, y)
                         self.zbuffer[y][x] = z
 

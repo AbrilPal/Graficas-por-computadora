@@ -1,3 +1,8 @@
+import struct
+
+def color(r, g, b):
+    return bytes([int(b * 255), int(g * 255), int(r * 255)])
+
 class Texture(object):
     def __init__(self, path):
         self.path = path

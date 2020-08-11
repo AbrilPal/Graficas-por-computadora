@@ -4,9 +4,12 @@
 
 from gl import Render
 from obj import Obj 
+from textura import Texture
 
-modelo = Render(3000,3000)
-modelo.loadModel('./models/earth.obj', (500, 500, 0), (1, 1, 1))
+
+modelo = Render(2000,2000)
+textura = Texture('./models/model.bmp')
+modelo.loadModel('./models/model.obj', (1000, 700, 700), (700, 700, 700), textura)
 modelo.glFinish('modelo_obj.bmp')
 modelo.glZBuffer('zbuffer.bmp')
 print("¡Listo! La imagen esta creada con el nombre de 'modelo_obj.bmp'.")
