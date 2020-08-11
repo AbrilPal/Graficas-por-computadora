@@ -213,7 +213,7 @@ class Render(object):
         imagen.close()
 
     # carga el modelo obj 
-    def loadModel(self, filename, translate, scale):
+    def loadModel(self, filename, translate, scale, texture = None):
         modelo = Obj(filename)
 
         lightX = 0
@@ -245,6 +245,30 @@ class Render(object):
 
             normal = division_lis_fro(cross2, norm1)
             intensity = punto(normal, lightX, lightY, lightZ)
+
+            if texture:
+                    vt0 = model.texcoords[face[0][1] - 1]
+                    vt1 = model.texcoords[face[1][1] - 1]
+                    vt2 = model.texcoords[face[2][1] - 1]
+                    vt0x = vt0[0]
+                    vt0y = vt0[1]
+                    vt1x = vt1[0]
+                    vt1y = vt1[1]
+                    vt2x = vt2[0]
+                    vt2y = vt2[1]
+                    if vertCount > 3:
+                        vt3 = model.texcoords[face[3][1] - 1]
+                        vt3x = vt3[0]
+                        vt3y = vt3[1]
+                else:
+                    vt0x = 0
+                    vt0y = 0
+                    vt1x = 0
+                    vt1y = 0
+                    vt2x = 0
+                    vt2y = 0
+                    vt3x = 0
+                    vt3y = 0
 
             if intensity >= 0:
                 self.triangle_bc(x0,x1,x2, y0, y1, y2, z0, z1, z2, color(convertir(intensity), convertir(intensity), convertir(intensity)))
