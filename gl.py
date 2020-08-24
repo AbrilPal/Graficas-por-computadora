@@ -6,7 +6,7 @@
 import struct
 from obj import Obj
 from textura import Texture
-from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords, cruz_lis, getMatrixInverse
+from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords, cruz_lis, M_Inverse
 import numpy as np
 from numpy import matrix, cos, sin, tan
 
@@ -91,7 +91,7 @@ class Render(object):
                     [derecha[2], arriba[2], adelante[2], camPosition[2]],
                     [0,0,0,1]]
 
-        self.viewMatrix=self.getMatrixInverse(camMatrix)
+        self.viewMatrix = M_Inverse(camMatrix)
 
     def glViewPort(self, x, y, ancho, alto):
         self.viewport_x = x

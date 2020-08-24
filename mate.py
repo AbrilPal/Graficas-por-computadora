@@ -42,7 +42,7 @@ def baryCoords(Ax, Bx, Cx, Ay, By, Cy, Px, Py):
 
     return u, v, w
 
- def getMatrixInverse( m):
+ def M_Inverse(m):
         determinant = getMatrixDeternminant(m)
         if len(m) == 2:
             return [[m[1][1]/determinant, -1*m[0][1]/determinant],
