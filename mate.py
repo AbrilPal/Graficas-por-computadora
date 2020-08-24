@@ -24,7 +24,6 @@ def division_lis_fro(norm, frobenius):
         resultado.append(norm[2]/ frobenius)
         return resultado
 
-
 def punto(normal, lightx, lighty, lightz):
     return (normal[0]*lightx+normal[1]*lighty+normal[2]*lightz)
 
