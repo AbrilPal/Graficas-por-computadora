@@ -1,12 +1,14 @@
 # Andrea Abril Palencia Gutierrez, 18198
-# SR5: Textures --- Graficas por computadora, seccion 20
-# 04/08/2020 - 10/08/2020
+# SR6: Transformations --- Graficas por computadora, seccion 20
+# 17/08/2020 - 24/08/2020
 
 # libreria
 import struct
 from obj import Obj
 from textura import Texture
-from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords, cruz_lis
+from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords, cruz_lis, getMatrixInverse
+import numpy as np
+from numpy import matrix, cos, sin, tan
 
 # para especificar cuanto tamaño quiero guardar en bytes de cada uno
 def char(c):
@@ -47,6 +49,49 @@ class Render(object):
         self.punto_color = negro
         # color de fondo de la imagen
         self.glClear()
+        # luz
+        self.lightx=0
+        self.lighty=0
+        self.lightz=1
+        # textura
+        self.active_texture = None
+        # shader
+        self.active_shader = None
+        # camara
+        self.createViewMatrix()
+        self.createProjectionMatrix()
+
+    def createViewMatrix(self, camPosition = (0,0,0), camRotation = (0,0,0)):
+        camMatrix = self.createObjectMatrix( translate = camPosition, rotate = camRotation)
+        self.viewMatrix = getMatrixInverse(camMatrix)
+
+    def lookAt(self, ojo, camPosition = (0,0,0)):
+        adelante = resta_lis(
+            camPosition[0],ojo[0],
+            camPosition[1],ojo[1],
+            camPosition[2],ojo[2])
+
+        adelante = division_lis_fro(
+            adelante,
+            normal_fro(adelante))
+        
+        derecha = division_lis_fro(
+            cruz_lis((0,1,0),adelante),
+            normal_fro(adelante))
+
+        arriba = cruz_lis(
+            adelante, 
+            derecha)
+        arriba = division_lis_fro(
+            arriba, 
+            normal_fro(arriba))
+
+        camMatrix = [[derecha[0], arriba[0], adelante[0], camPosition[0]],
+                    [derecha[1], arriba[1], adelante[1], camPosition[1]],
+                    [derecha[2], arriba[2], adelante[2], camPosition[2]],
+                    [0,0,0,1]]
+
+        self.viewMatrix=self.getMatrixInverse(camMatrix)
 
     def glViewPort(self, x, y, ancho, alto):
         self.viewport_x = x

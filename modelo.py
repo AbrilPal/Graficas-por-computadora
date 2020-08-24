@@ -1,6 +1,6 @@
 # Andrea Abril Palencia Gutierrez, 18198
-# SR5: Textures --- Graficas por computadora, seccion 20
-# 04/08/2020 - 10/08/2020
+# SR6: Transformations --- Graficas por computadora, seccion 20
+# 17/08/2020 - 24/08/2020
 
 from gl import Render
 from obj import Obj 

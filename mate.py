@@ -42,6 +42,16 @@ def baryCoords(Ax, Bx, Cx, Ay, By, Cy, Px, Py):
 
     return u, v, w
 
+ def getMatrixInverse( m):
+        determinant = getMatrixDeternminant(m)
+        if len(m) == 2:
+            return [[m[1][1]/determinant, -1*m[0][1]/determinant],
+                    [-1*m[1][0]/determinant, m[0][0]/determinant]]
+
+def getMatrixDeternminant(m):
+        if len(m) == 2:
+            return m[0][0]*m[1][1]-m[0][1]*m[1][0]
+
 def cruz_lis(v0, v1):
     resultado=[]
     resultado.append(v0[1]*v1[2]-v1[1]*v0[2])
