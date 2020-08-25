@@ -42,13 +42,12 @@ class Render(object):
     # inicializa cualquier objeto dentro de la clase Render
     def __init__(self, ancho, alto):
         # ancho de la imagen
-        self.ancho = ancho
+        #self.ancho = ancho
         # alto de la imagen
-        self.alto = alto
+        #self.alto = alto
+        self.glCreateWindow(ancho, alto)
         # color predeterminado del punto en la pantalla
         self.punto_color = negro
-        # color de fondo de la imagen
-        self.glClear()
         # luz
         self.lightx=0
         self.lighty=0
@@ -63,7 +62,7 @@ class Render(object):
 
     def createViewMatrix(self, camPosition = (0,0,0), camRotation = (0,0,0)):
         camMatrix = self.createObjectMatrix( translate = camPosition, rotate = camRotation)
-        self.viewMatrix = getMatrixInverse(camMatrix)
+        self.viewMatrix = M_Inverse(camMatrix)
 
     def lookAt(self, ojo, camPosition = (0,0,0)):
         adelante = resta_lis(
@@ -93,11 +92,30 @@ class Render(object):
 
         self.viewMatrix = M_Inverse(camMatrix)
 
+    def createProjectionMatrix(self, n = 0.1, f = 1000, fov = 60):
+        t = tan((fov * np.pi / 180) / 2) * n
+        r = t * self.viewport_ancho / self.viweport_alto
+        self.projectionMatrix = [[n / r, 0, 0, 0],
+                                [0, n / t, 0, 0],
+                                [0, 0, -(f+n)/(f-n), -(2*f*n)/(f-n)],
+                                [0, 0, -1, 0]]
+
+    def glCreateWindow(self, ancho, alto):
+        self.ancho = ancho
+        self.alto = alto
+        self.glClear()
+        self.glViewport(0, 0, ancho, alto)
+
     def glViewPort(self, x, y, ancho, alto):
         self.viewport_x = x
         self.viewport_y = y
         self.viewport_ancho = ancho
         self.viewport_alto = alto
+
+        self.viewportMatrix = matrix([[ancho/2, 0, 0, x + ancho/2],
+                                      [0, alto/2, 0, y + alto/2],
+                                      [0, 0, 0.5, 0.5],
+                                      [0, 0, 0, 1]])
 
     # fondo de toda la imagen
     def glClear(self):
