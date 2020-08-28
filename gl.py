@@ -278,7 +278,7 @@ class Render(object):
         imagen.close()
 
     # carga el modelo obj 
-    def loadModel(self, filename, translate, scale, texture):
+    def loadModel(self, filename, translate, scale, texture = None):
         modelo = Obj(filename)
 
         lightx = 0

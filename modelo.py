@@ -8,8 +8,8 @@ from textura import Texture
 
 
 modelo = Render(2000,2000)
-textura = Texture('./models/model.bmp')
-modelo.loadModel('./models/model.obj', (1000, 700, 700), (700, 700, 700), textura)
+#textura = Texture('./models/model.bmp')
+modelo.loadModel('./models/model.obj', (1000, 700, 700), (700, 700, 700))
 modelo.glFinish('modelo_obj.bmp')
 modelo.glZBuffer('zbuffer.bmp')
 print("¡Listo! La imagen esta creada con el nombre de 'modelo_obj.bmp'.")
