@@ -6,7 +6,7 @@
 import struct
 from obj import Obj
 from textura import Texture
-from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords, cruz_lis, M_Inverse
+from mate import normal_fro, resta_lis, division_lis_fro, punto, baryCoords, cruz_lis, mult_M, multiplicacion_M
 import numpy as np
 from numpy import matrix, cos, sin, tan
 
@@ -52,49 +52,61 @@ class Render(object):
         self.lightx=0
         self.lighty=0
         self.lightz=1
-        # textura
-        self.active_texture = None
-        # shader
-        self.active_shader = None
         # camara
         self.createViewMatrix()
         self.createProjectionMatrix()
 
-    def createViewMatrix(self, camPosition = (0,0,0), camRotation = (0,0,0)):
+    def createViewMatrix(self, camPosition = (0,1,0), camRotation = (1,1,0)):
         camMatrix = self.createObjectMatrix( translate = camPosition, rotate = camRotation)
-        self.viewMatrix = M_Inverse(camMatrix)
+        self.viewMatrix = np.linalg.inv(camMatrix)
 
-    def lookAt(self, ojo, camPosition = (0,0,0)):
-        adelante = resta_lis(
-            camPosition[0],ojo[0],
-            camPosition[1],ojo[1],
-            camPosition[2],ojo[2])
+    def lookAt(self, eye, camPosition = (0,0,0)):
+        forward = np.subtract(camPosition, eye)
+        forward = forward / np.linalg.norm(forward)
 
-        adelante = division_lis_fro(
-            adelante,
-            normal_fro(adelante))
+        right = np.cross((0,1,0), forward)
+        right = right / np.linalg.norm(right)
+
+        up = np.cross(forward, right)
+        up = up / np.linalg.norm(up)
+
+        camMatrix = matrix([[right[0], up[0], forward[0], camPosition[0]],
+                            [right[1], up[1], forward[1], camPosition[1]],
+                            [right[2], up[2], forward[2], camPosition[2]],
+                            [0,0,0,1]])
+
+        self.viewMatrix = np.linalg.inv(camMatrix)
+
+        # adelante = resta_lis(
+        #     camPosition[0],ojo[0],
+        #     camPosition[1],ojo[1],
+        #     camPosition[2],ojo[2])
+
+        # adelante = division_lis_fro(
+        #     adelante,
+        #     normal_fro(adelante))
         
-        derecha = division_lis_fro(
-            cruz_lis((0,1,0),adelante),
-            normal_fro(adelante))
+        # derecha = division_lis_fro(
+        #     cruz_lis((0,1,0),adelante),
+        #     normal_fro(adelante))
 
-        arriba = cruz_lis(
-            adelante, 
-            derecha)
-        arriba = division_lis_fro(
-            arriba, 
-            normal_fro(arriba))
+        # arriba = cruz_lis(
+        #     adelante, 
+        #     derecha)
+        # arriba = division_lis_fro(
+        #     arriba, 
+        #     normal_fro(arriba))
 
-        camMatrix = [[derecha[0], arriba[0], adelante[0], camPosition[0]],
-                    [derecha[1], arriba[1], adelante[1], camPosition[1]],
-                    [derecha[2], arriba[2], adelante[2], camPosition[2]],
-                    [0,0,0,1]]
+        # camMatrix = [[derecha[0], arriba[0], adelante[0], camPosition[0]],
+        #             [derecha[1], arriba[1], adelante[1], camPosition[1]],
+        #             [derecha[2], arriba[2], adelante[2], camPosition[2]],
+        #             [0,0,0,1]]
 
-        self.viewMatrix = M_Inverse(camMatrix)
+        # self.viewMatrix = np.linalg.inv(camMatrix)
 
     def createProjectionMatrix(self, n = 0.1, f = 1000, fov = 60):
         t = tan((fov * np.pi / 180) / 2) * n
-        r = t * self.viewport_ancho / self.viweport_alto
+        r = t * self.viewport_ancho / self.viewport_alto
         self.projectionMatrix = [[n / r, 0, 0, 0],
                                 [0, n / t, 0, 0],
                                 [0, 0, -(f+n)/(f-n), -(2*f*n)/(f-n)],
@@ -104,7 +116,7 @@ class Render(object):
         self.ancho = ancho
         self.alto = alto
         self.glClear()
-        self.glViewport(0, 0, ancho, alto)
+        self.glViewPort(0, 0, ancho, alto)
 
     def glViewPort(self, x, y, ancho, alto):
         self.viewport_x = x
@@ -179,6 +191,89 @@ class Render(object):
                     limit += 1
         except ZeroDivisionError:
             pass
+
+    def transform(self, vertex, vMatrix):
+        # augVertex = (vertex[0], vertex[1], vertex[2], 1)
+        # # Vt = M * V
+        # transVertex = mult_M(augVertex, vMatrix)
+        # # Vf = [Vtx/Vtw, Vty/Vtw, Vtz/Vtw]
+        # transVertex = (transVertex[0]/transVertex[3],
+        #                transVertex[1]/transVertex[3],
+        #                transVertex[2]/transVertex[3])
+    
+        # return transVertex
+        # pVertex=[ [vertex[0]], [vertex[1]], [vertex[2]], [1]]
+        # a=mult_M(self.viewportMatrix, self.projectionMatrix)
+        # b=mult_M(a, self.viewMatrix)
+        # c=mult_M(b, vMatrix)
+        # pVertex=mult_M(c, pVertex)
+        
+        
+        # pVertex=(pVertex[0][0] / pVertex[3][0] ,
+        #         pVertex[1][0] / pVertex[3][0] ,
+        #         pVertex[2][0]  / pVertex[3][0] )
+        
+        # return pVertex
+
+        augVertex = ( vertex[0], vertex[1], vertex[2], 1)
+        transVertex = self.viewportMatrix @ self.projectionMatrix @ self.viewMatrix @ vMatrix @ augVertex
+
+        transVertex = transVertex.tolist()[0]
+
+        transVertex = (transVertex[0] / transVertex[3],
+                         transVertex[1] / transVertex[3],
+                         transVertex[2] / transVertex[3])
+        print(transVertex)
+        return transVertex
+
+
+    def dirTransform(self, vertex, vMatrix):#transform para las normales
+        fVertex = [ [vertex[0]], [vertex[1]], [vertex[2]], [0]]
+        a = mult_M(fVertex, vMatrix)
+        fVertex = (a[0][0],
+                a[1][0],
+                a[2][0])
+        return fVertex
+
+    def createObjectMatrix(self, translate = (0,0,0), scale = (1,1,1), rotate=(1,1,0)):
+        # matriz de traslacion
+        translateMatrix = [[1, 0, 0, translate[0]],
+                            [0, 1, 0, translate[1]],
+                            [0, 0, 1, translate[2]],
+                            [0, 0, 0, 1]]
+        # matriz de la escala
+        scaleMatrix = [[scale[0], 0, 0, 0],
+                        [0, scale[1], 0, 0],
+                        [0, 0, scale[2], 0],
+                        [0, 0, 0, 1]]
+        # matriz de rotacion
+        rotationMatrix = self.createRotationMatrix(rotate)
+        a = multiplicacion_M(translateMatrix, rotationMatrix, 4,4,4,4)
+        b = multiplicacion_M(a, scaleMatrix, 4,4,4,4)
+        return b
+
+    def createRotationMatrix(self, rotate=(1,1,0)):
+        pitch = np.deg2rad(rotate[0])
+        yaw = np.deg2rad(rotate[1])
+        roll = np.deg2rad(rotate[2])
+        #matriz de rotacion en x
+        rotationx = [[1, 0, 0, 0],
+                            [0, cos(pitch),-sin(pitch), 0],
+                            [0, sin(pitch), cos(pitch), 0],
+                            [0, 0, 0, 1]]
+        #matriz de rotacion en y
+        rotationy = [[cos(yaw), 0, sin(yaw), 0],
+                            [0, 1, 0, 0],
+                            [-sin(yaw), 0, cos(yaw), 0],
+                            [0, 0, 0, 1]]
+        #matriz de rotacion en z
+        rotationZ = [[cos(roll),-sin(roll), 0, 0],
+                            [sin(roll), cos(roll), 0, 0],
+                            [0, 0, 1, 0],
+                            [0, 0, 0, 1]]
+        a=multiplicacion_M(rotationx, rotationy, 4,4,4,4)
+        b=multiplicacion_M(a, rotationZ, 4,4,4,4)
+        return (b)
 
     def Model(self, filename, translate, scale):
         modelo = Obj(filename)
@@ -278,38 +373,55 @@ class Render(object):
         imagen.close()
 
     # carga el modelo obj 
-    def loadModel(self, filename, translate, scale, texture = None):
+    def loadModel(self, filename, translate, scale, texture = None, rotate=(1,1,0)):
         modelo = Obj(filename)
-
-        lightx = 0
-        lighty = 0
-        lightZ = 1
+        modelMatrix = self.createObjectMatrix(translate, scale, rotate)
+        rotationMatrix = self.createRotationMatrix(rotate)
 
         for face in modelo.faces:
 
             vertCount = len(face)
+            # v0 = modelo.vertices[ face[0][0] - 1 ]
+            # v1 = modelo.vertices[ face[1][0] - 1 ]
+            # v2 = modelo.vertices[ face[2][0] - 1 ]
+
+            # x0 = int(v0[0] * scale[0]  + translate[0])
+            # y0 = int(v0[1] * scale[1]  + translate[1])
+            # z0 = int(v0[2] * scale[2]  + translate[2])
+            # x1 = int(v1[0] * scale[0]  + translate[0])
+            # y1 = int(v1[1] * scale[1]  + translate[1])
+            # z1 = int(v1[2] * scale[2]  + translate[2])
+            # x2 = int(v2[0] * scale[0]  + translate[0])
+            # y2 = int(v2[1] * scale[1]  + translate[1])
+            # z2 = int(v2[2] * scale[2]  + translate[2])
+
             v0 = modelo.vertices[ face[0][0] - 1 ]
             v1 = modelo.vertices[ face[1][0] - 1 ]
             v2 = modelo.vertices[ face[2][0] - 1 ]
+            v0 = self.transform(v0, modelMatrix)
+            v1 = self.transform(v1, modelMatrix)
+            v2 = self.transform(v2, modelMatrix)
 
-            x0 = int(v0[0] * scale[0]  + translate[0])
-            y0 = int(v0[1] * scale[1]  + translate[1])
-            z0 = int(v0[2] * scale[2]  + translate[2])
-            x1 = int(v1[0] * scale[0]  + translate[0])
-            y1 = int(v1[1] * scale[1]  + translate[1])
-            z1 = int(v1[2] * scale[2]  + translate[2])
-            x2 = int(v2[0] * scale[0]  + translate[0])
-            y2 = int(v2[1] * scale[1]  + translate[1])
-            z2 = int(v2[2] * scale[2]  + translate[2])
+            x0 = v0[0]
+            y0 = v0[1]
+            z0 = v0[2]
+            x1 = v1[0]
+            y1 = v1[1]
+            z1 = v1[2]
+            x2 = v2[0]
+            y2 = v2[1]
+            z2 = v2[2]
 
-            sub1 = resta_lis(x1, x0, y1, y0, z1, z0)
-            sub2 = resta_lis(x2, x0, y2, y0, z2, z0)
-            cross1 = cruz_lis(sub1, sub2)
-            norm1 = normal_fro(cross1)
-            cross2 = cruz_lis(sub1, sub2)
+            # x0, x1, x2 = int(v0[0]), int(v1[0]), int(v2[0])
+            # y0, y1, y2 = int(v0[1]), int(v1[1]), int(v2[1])
+            # z0, z1, z2 = int(v0[2]), int(v1[2]), int(v2[2])
 
-            normal = division_lis_fro(cross2, norm1)
-            intensity = punto(normal, lightx, lighty, lightZ)
+            if vertCount > 3: 
+                v3 = modelo.vertices[face[3][0] - 1]
+                v3 = self.transform(v3, modelMatrix)
+                x3 = v3[0]
+                y3 = v3[1]
+                z3 = v3[2]
 
             if texture:
                 vt0 = modelo.texcoords[face[0][1] - 1]
@@ -335,23 +447,29 @@ class Render(object):
                 vt3x = 0
                 vt3y = 0
 
-            if vertCount > 3: 
-                v3 = modelo.vertices[face[3][0] - 1]
-                x3 = int(v3[0] * scale[0]  + translate[0])
-                y3 = int(v3[1] * scale[1]  + translate[1])
-                z3 = int(v3[2] * scale[2]  + translate[2])
+            vn0 = modelo.normals[face[0][2] - 1]
+            vn1 = modelo.normals[face[1][2] - 1]
+            vn2 = modelo.normals[face[2][2] - 1]
+            vn0 = self.dirTransform(vn0, rotationMatrix)
+            vn1 = self.dirTransform(vn1, rotationMatrix)
+            vn2 = self.dirTransform(vn2, rotationMatrix)
+            if vertCount > 3:
+                vn3 = modelo.normals[face[3][2] - 1]
+                vn3 = self.dirTransform(vn3, rotationMatrix)
 
-            if intensity >= 0:
-                self.triangle_bc(x0, x1, x2, y0, y1, y2, z0, z1, z2, vt0x, vt1x, vt2x, vt0y, vt1y, vt2y, texture = texture, intensity = intensity) 
-                if vertCount > 3:
-                    self.triangle_bc(x0, x2, x3, y0, y2, y3, z0, z2, z3, vt0x, vt2x, vt3x, vt0y, vt2y, vt3y, texture = texture, intensity = intensity)           
+            self.triangle_bc(x0, x1, x2, y0, y1, y2, z0, z1, z2, vt0x, vt1x, vt2x, vt0y, vt1y, vt2y, texture = texture)
+            if vertCount > 3:
+                self.triangle_bc(x0, x2, x3, y0, y2, y3, z0, z2, z3, vt0x, vt2x, vt3x, vt0y, vt2y, vt3y, texture = texture)
+
+            # if vertCount > 3:
+            #     self.triangle_bc(x0, x2, x3, y0, y2, y3, z0, z2, z3, vt0x, vt2x, vt3x, vt0y, vt2y, vt3y, texture = texture, intensity = intensity)           
             
     #Barycentric Coordinates
-    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, tax, tbx, tcx, tay, tby, tcy, _color = rosado, texture = None, intensity = 1):
-        minx = min(Ax, Bx, Cx)
-        miny = min(Ay, By, Cy)
-        maxx = max(Ax, Bx, Cx)
-        maxy = max(Ay, By, Cy)
+    def triangle_bc(self, Ax, Bx, Cx, Ay, By, Cy, Az, Bz, Cz, tax, tbx, tcx, tay, tby, tcy, _color = rosado, texture = None):
+        minx = round(min(Ax, Bx, Cx))
+        miny = round(min(Ay, By, Cy))
+        maxx = round(max(Ax, Bx, Cx))
+        maxy = round(max(Ay, By, Cy))
 
         for x in range(minx, maxx + 1):
             for y in range(miny, maxy + 1):
@@ -367,9 +485,6 @@ class Render(object):
                         g /= 255
                         r /= 255
 
-                        b *= intensity
-                        g *= intensity
-                        r *= intensity
                         if texture:
                             tx = tax * u + tbx * v + tcx * w
                             ty = tay * u + tby * v + tcy * w

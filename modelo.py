@@ -7,9 +7,11 @@ from obj import Obj
 from textura import Texture
 
 
-modelo = Render(2000,2000)
-#textura = Texture('./models/model.bmp')
-modelo.loadModel('./models/model.obj', (1000, 700, 700), (700, 700, 700))
+modelo = Render(800,800)
+textura = Texture('./models/model.bmp')
+posModel = ( 0, 0, 3)
+modelo.lookAt(posModel, (-2, -2, -0.25))
+# modelo.loadModel('./models/model.obj', posModel, (1,1,1),(0,0,0))
+modelo.loadModel('./models/model.obj', posModel, (1, 1, 1), textura, (0, 0, 1))
 modelo.glFinish('modelo_obj.bmp')
-modelo.glZBuffer('zbuffer.bmp')
 print("¡Listo! La imagen esta creada con el nombre de 'modelo_obj.bmp'.")
